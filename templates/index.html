@@ -74,6 +74,7 @@
 
             const response = await fetch('/get-countries');
             const data = await response.json();
+            console.log('Get Number API Response:', result); // এই লাইনটি যোগ করুন
             console.log('API Response:', data); // এই লাইনটি যোগ করুন
 
             if (response.ok) {
