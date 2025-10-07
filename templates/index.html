@@ -78,6 +78,7 @@
 
             if (response.ok) {
                 const countries = data.data;
+                console.log('Single Country Object:', countries[0]); // এই লাইনটি যোগ করুন
                 countries.forEach(country => {
                     const option = document.createElement('option');
                     option.value = country.id || country.code;
