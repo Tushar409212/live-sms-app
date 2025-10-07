@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual SMS Receiver</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px;}
+        .container { width: 100%; max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h1, h2 { text-align: center; color: #1c1e21; }
+        .phone-display { padding: 15px; background: #e9ecef; border-radius: 5px; text-align: center; margin-bottom: 20px; min-height: 30px; word-wrap: break-word; }
+        .phone-number { font-size: 1.6em; font-weight: bold; color: #1877f2; letter-spacing: 2px; }
+        button { display: block; width: 100%; padding: 12px; font-size: 1em; color: white; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 15px; transition: background-color 0.2s; }
+        button:disabled { background-color: #ccd0d5; cursor: not-allowed; }
+        select { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        #countries-btn { background-color: #42b72a; }
+        #get-number-btn { background-color: #1877f2; }
+        #check-sms-btn { background-color: #f5a623; }
+        .hidden { display: none; }
+        .message-box { border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 5px; background: #f9f9f9; }
+        .message-header { font-weight: bold; }
+        .message-body { margin-top: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Virtual SMS Receiver</h1>
+        <div class="phone-display">
+            <span id="phone-number-text" class="phone-number"></span>
+        </div>
+        <hr>
+
+        <div id="step1-countries">
+            <h2>Step 1: Load Countries</h2>
+            <button id="countries-btn">Show Available Countries</button>
+        </div>
+        
+        <div id="step2-selection" class="hidden">
+            <h2>Step 2: Select a Country & Get Number</h2>
+            <select id="country-select">
+                <option value="">-- Please choose a country --</option>
+            </select>
+            <button id="get-number-btn" disabled>Get Number for Selected Country</button>
+        </div>
+
+        <div id="step3-sms" class="hidden">
+            <h2>Step 3: Check for Messages</h2>
+            <button id="check-sms-btn">Refresh SMS</button>
+            <div id="messages-container" style="margin-top: 15px;"></div>
+        </div>
+        
+    </div>
+
+    <script>
+        // State variables to hold current number and country code
+        let currentNumber = null;
+        let currentCountryCode = null;
+
+        // Element references
+        const countriesBtn = document.getElementById('countries-btn');
+        const step1Div = document.getElementById('step1-countries');
+        const step2Div = document.getElementById('step2-selection');
+        const step3Div = document.getElementById('step3-sms');
+        const countrySelect = document.getElementById('country-select');
+        const getNumberBtn = document.getElementById('get-number-btn');
+        const checkSmsBtn = document.getElementById('check-sms-btn');
+        const phoneNumberText = document.getElementById('phone-number-text');
+        const messagesContainer = document.getElementById('messages-container');
+
+        // Step 1: Load Countries
+        countriesBtn.addEventListener('click', async () => {
+            countriesBtn.textContent = 'Loading...';
+            countriesBtn.disabled = true;
+
+            const response = await fetch('/get-countries');
+            const data = await response.json();
+
+            if (response.ok) {
+                const countries = data.countries || data;
+                countries.forEach(country => {
+                    const option = document.createElement('option');
+                    option.value = country.id || country.code;
+                    option.textContent = country.name;
+                    countrySelect.appendChild(option);
+                });
+                step1Div.classList.add('hidden');
+                step2Div.classList.remove('hidden');
+            } else {
+                alert(`Error: ${data.error || 'Failed to fetch countries.'}`);
+                countriesBtn.textContent = 'Show Available Countries';
+                countriesBtn.disabled = false;
+            }
+        });
+        
+        // Enable button when a country is selected
+        countrySelect.addEventListener('change', () => {
+            getNumberBtn.disabled = !countrySelect.value;
+        });
+
+        // Step 2: Get Number for the selected country
+        getNumberBtn.addEventListener('click', async () => {
+            currentCountryCode = countrySelect.value;
+            if (!currentCountryCode) return;
+
+            getNumberBtn.textContent = 'Generating...';
+            getNumberBtn.disabled = true;
+            phoneNumberText.textContent = '...';
+
+            const response = await fetch('/generate-number', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ countryCode: currentCountryCode })
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                // API response অনুযায়ী "result.data.number" পরিবর্তন হতে পারে
+                currentNumber = result.data.number || result.data.phoneNumber;
+                phoneNumberText.textContent = currentNumber;
+                step3Div.classList.remove('hidden');
+                messagesContainer.innerHTML = '<p>Click "Refresh SMS" to check for messages.</p>';
+            } else {
+                alert(`Error: ${result.error || 'Failed to generate number.'}`);
+                phoneNumberText.textContent = 'Failed!';
+            }
+            
+            getNumberBtn.textContent = 'Get Number for Selected Country';
+            getNumberBtn.disabled = false;
+        });
+
+        // Step 3: Check for SMS
+        checkSmsBtn.addEventListener('click', async () => {
+            if (!currentNumber || !currentCountryCode) return;
+
+            checkSmsBtn.textContent = 'Checking...';
+            checkSmsBtn.disabled = true;
+
+            const response = await fetch(`/get-messages?countryCode=${currentCountryCode}&phoneNumber=${currentNumber}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                messagesContainer.innerHTML = '';
+                if (data.messages && data.messages.length > 0) {
+                    data.messages.forEach(msg => {
+                        const messageDiv = document.createElement('div');
+                        messageDiv.className = 'message-box';
+                        // API response অনুযায়ী 'msg.sender' এবং 'msg.text' পরিবর্তন হতে পারে
+                        messageDiv.innerHTML = `
+                            <div class="message-header">From: ${msg.sender || 'Unknown'}</div>
+                            <div class="message-body">${msg.text || 'No content'}</div>
+                        `;
+                        messagesContainer.appendChild(messageDiv);
+                    });
+                } else {
+                    messagesContainer.innerHTML = '<p>No new messages found.</p>';
+                }
+            } else {
+                 messagesContainer.innerHTML = `<p>Error: ${data.error || 'Failed to fetch messages.'}</p>`;
+            }
+            
+            checkSmsBtn.textContent = 'Refresh SMS';
+            checkSmsBtn.disabled = false;
+        });
+    </script>
+</body>
+</html>
