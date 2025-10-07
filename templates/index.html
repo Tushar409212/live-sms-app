@@ -115,6 +115,7 @@
             });
             const result = await response.json();
             console.log('Get Number API Response:', result); // এই লাইনটি যোগ করুন
+            console.log('First Number Object:', result.data.data[0]); // এই নতুন লাইনটি যোগ করুন
 
             if (result.success) {
                 // API response অনুযায়ী "result.data.number" পরিবর্তন হতে পারে
