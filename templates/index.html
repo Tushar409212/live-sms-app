@@ -77,7 +77,7 @@
             console.log('API Response:', data); // এই লাইনটি যোগ করুন
 
             if (response.ok) {
-                const countries = data.countries || data;
+                const countries = data.data;
                 countries.forEach(country => {
                     const option = document.createElement('option');
                     option.value = country.id || country.code;
