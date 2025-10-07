@@ -152,6 +152,7 @@
 
             const response = await fetch(`/get-messages?countryCode=${currentCountryCode}&phoneNumber=${currentNumber}`);
             const data = await response.json();
+            console.log('SMS History API Response:', data); // এই লাইনটি যোগ করুন
             
             if (data.success) {
                 messagesContainer.innerHTML = '';
