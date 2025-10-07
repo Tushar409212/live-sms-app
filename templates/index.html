@@ -118,15 +118,26 @@
             console.log('First Number Object:', result.data.data[0]); // এই নতুন লাইনটি যোগ করুন
 
             if (result.success) {
-                // API response অনুযায়ী "result.data.number" পরিবর্তন হতে পারে
-                currentNumber = result.data.number || result.data.phoneNumber;
-                phoneNumberText.textContent = currentNumber;
-                step3Div.classList.remove('hidden');
-                messagesContainer.innerHTML = '<p>Click "Refresh SMS" to check for messages.</p>';
-            } else {
-                alert(`Error: ${result.error || 'Failed to generate number.'}`);
-                phoneNumberText.textContent = 'Failed!';
-            }
+    // নম্বরগুলোর তালিকাটি সরাসরি এখানে আছে
+    const numbersArray = result.data.data;
+
+    if (numbersArray && numbersArray.length > 0) {
+        // তালিকা থেকে প্রথম নম্বরটিই সরাসরি নেওয়া হচ্ছে
+        currentNumber = numbersArray[0]; // <<< এটাই চূড়ান্ত এবং সঠিক লাইন
+
+        phoneNumberText.textContent = currentNumber;
+        step3Div.classList.remove('hidden');
+        messagesContainer.innerHTML = '<p>Click "Refresh SMS" to check for messages.</p>';
+    } else {
+        // যদি ওই দেশের জন্য কোনো নম্বর না পাওয়া যায়
+        alert('No numbers available for this country.');
+        phoneNumberText.textContent = 'Not available';
+    }
+
+} else {
+    alert(`Error: ${result.error || 'Failed to generate number.'}`);
+    phoneNumberText.textContent = 'Failed!';
+}
             
             getNumberBtn.textContent = 'Get Number for Selected Country';
             getNumberBtn.disabled = false;
