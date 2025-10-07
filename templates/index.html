@@ -81,8 +81,8 @@
                 console.log('Single Country Object:', countries[0]); // এই লাইনটি যোগ করুন
                 countries.forEach(country => {
                     const option = document.createElement('option');
-                    option.value = country.id || country.code;
-                    option.textContent = country.name;
+                    option.value = country.countryCode;
+                    option.textContent = country.countryName.trim();
                     countrySelect.appendChild(option);
                 });
                 step1Div.classList.add('hidden');
